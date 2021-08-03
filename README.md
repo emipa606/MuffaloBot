@@ -14,7 +14,7 @@ Fill in the following fields:
 
 Compile the solution as usual.
 
-MuffaloBot targets the .NET Framework.
+MuffaloBot targets .NET (formerly .NET Core)
 
 ## MuffaloBot Development Discord
 
