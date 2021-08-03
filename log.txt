@@ -1,0 +1,7 @@
+2021-07-27 22:11:23.124 -04:00 [INF] Loaded 3 extensions
+2021-07-27 22:11:23.712 -04:00 [INF] MSBuild registered from C:\Program Files\dotnet\sdk\5.0.100\
+2021-07-27 22:11:31.144 -04:00 [INF] Initializing upgrade step Select an entrypoint
+2021-07-27 22:11:31.148 -04:00 [INF] Setting entrypoint to only project in solution: C:\Users\alexb\source\repos\MuffaloBot\MuffaloBot\MuffaloBot.csproj
+2021-07-27 22:11:31.169 -04:00 [INF] Initializing upgrade step Select project to upgrade
+2021-07-27 22:11:31.210 -04:00 [INF] Initializing upgrade step Back up project
+2021-07-27 22:11:36.811 -04:00 [INF] Saving upgrade progress file at C:\Users\alexb\source\repos\MuffaloBot\.upgrade-assistant
