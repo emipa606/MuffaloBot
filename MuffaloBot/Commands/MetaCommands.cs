@@ -46,7 +46,7 @@ This bot account will not have an invite link. It is exclusive to the RimWorld d
             embedBuilder.WithColor(DiscordColor.Azure);
             return ctx.RespondAsync(embed: embedBuilder.Build());
         }
-        [Command("update"), RequireOwner, Hidden]
+        [Command("update"), RequirePermissions(Permissions.ViewAuditLog), Hidden]
         public async Task UpdateAsync(CommandContext ctx)
         {
             await RunUpdateAsync(ctx).ConfigureAwait(false);
