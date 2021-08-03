@@ -23,7 +23,7 @@ namespace MuffaloBot.Modules
         public async Task UpdateDatabaseAsync()
         {
             HttpClient client = new HttpClient();
-            using (MemoryStream memory = new MemoryStream(await client.GetByteArrayAsync("https://github.com/spdskatr/MuffaloBot/raw/master/MuffaloBot/Data/Defs.zip").ConfigureAwait(false)))
+            using (MemoryStream memory = new MemoryStream(await client.GetByteArrayAsync("https://github.com/Zero747/MuffaloBot/raw/master/MuffaloBot/Data/Defs.zip").ConfigureAwait(false)))
             using (ZipArchive archive = new ZipArchive(memory))
             {
                 database = new List<KeyValuePair<string, XmlDocument>>(archive.Entries.Count);
