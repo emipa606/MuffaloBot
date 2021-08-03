@@ -2,7 +2,7 @@
 
 This is the source code for a bot hosted on the RimWorld Discord. 
 
-
+This fork has been updated to run on .net instead of .net framework
 
 ## How to self-host
 
