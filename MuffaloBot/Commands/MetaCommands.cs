@@ -39,7 +39,7 @@ namespace MuffaloBot.Commands
             embedBuilder.WithDescription(@"Contributors: spdskatr
 Library: [DSharpPlus](https://dsharpplus.emzi0767.com/) (.NET)
 Other libraries: [Magick.NET](https://github.com/dlemstra/Magick.NET) Wrapper for [ImageMagick](http://www.imagemagick.org/) (.NET)
-Hosted by: Zirr
+Hosted by: Mehni
 GitHub Repository: https://github.com/spdskatr/MuffaloBot
 Beta testing discord: https://discord.gg/6MHVepE
 This bot account will not have an invite link. It is exclusive to the RimWorld discord.");
