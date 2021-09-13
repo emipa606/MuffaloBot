@@ -32,7 +32,7 @@ namespace MuffaloBot.Modules
         public async Task ReloadDataAsync()
         {
             HttpClient http = new HttpClient();
-            string result = await http.GetStringAsync("https://raw.githubusercontent.com/spdskatr/MuffaloBot/master/MuffaloBot/Data/data.json").ConfigureAwait(false);
+            string result = await http.GetStringAsync("https://raw.githubusercontent.com/Zero747/MuffaloBot/master/MuffaloBot/Data/data.json").ConfigureAwait(false);
             JObject jObject = JObject.Parse(result);
             data = jObject;
         }

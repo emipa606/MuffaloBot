@@ -35,7 +35,7 @@ namespace MuffaloBot.Commands
         {
             DiscordEmbedBuilder embedBuilder = new DiscordEmbedBuilder();
             embedBuilder.WithTitle("About MuffaloBot");
-            embedBuilder.WithUrl("https://github.com/spdskatr/MuffaloBot");
+            embedBuilder.WithUrl("https://github.com/Zero747/MuffaloBot");
             embedBuilder.WithDescription(@"Contributors: spdskatr
 Library: [DSharpPlus](https://dsharpplus.emzi0767.com/) (.NET)
 Other libraries: [Magick.NET](https://github.com/dlemstra/Magick.NET) Wrapper for [ImageMagick](http://www.imagemagick.org/) (.NET)
