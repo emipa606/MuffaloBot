@@ -70,16 +70,15 @@ namespace MuffaloBot.Modules
                 return;
             }
 
-            int ind;
-            if ((ind = FindIndexOfIdInCache(e.Message.Id)) != -1)
-            {
-                await NotifyDeleteAsync(discordMessageCache[ind], e.Guild);
-                discordMessageCache[ind] = null;
-            }
-            else
+            var ind = FindIndexOfIdInCache(e.Message.Id);
+            if (ind == -1)
             {
                 await NotifyDeleteAsync(e.Message, e.Guild);
+                return;
             }
+
+            await NotifyDeleteAsync(discordMessageCache[ind], e.Guild);
+            discordMessageCache[ind] = null;
         }
 
         private async Task OnReceiveDiscordModifyLog(MessageUpdateEventArgs e)
@@ -90,19 +89,18 @@ namespace MuffaloBot.Modules
                 return;
             }
 
-            int ind;
-            if ((ind = FindIndexOfIdInCache(e.Message.Id)) != -1)
-            {
-                var before = discordMessageCache[ind];
-                await NotifyModifyAsync(before, e.Message, e.Guild);
-                discordMessageCache[ind] =
-                    (DiscordMessage)memberwiseCloneMethod.Invoke(e.Message, Array.Empty<object>());
-            }
-            else
+            var ind = FindIndexOfIdInCache(e.Message.Id);
+            if (ind == -1)
             {
                 await NotifyModifyAsync(null, e.Message, e.Guild);
                 await PushMessage(e.Message);
+                return;
             }
+
+            var before = discordMessageCache[ind];
+            await NotifyModifyAsync(before, e.Message, e.Guild);
+            discordMessageCache[ind] =
+                (DiscordMessage)memberwiseCloneMethod.Invoke(e.Message, Array.Empty<object>());
         }
 
         private async Task NotifyDeleteAsync(DiscordMessage message, DiscordGuild guild)

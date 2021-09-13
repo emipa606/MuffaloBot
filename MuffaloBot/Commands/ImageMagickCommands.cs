@@ -1,90 +1,111 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using ImageMagick;
-using DSharpPlus.CommandsNext;
-using DSharpPlus.CommandsNext.Attributes;
-using DSharpPlus.Entities;
-using System.Text.RegularExpressions;
 using System.IO;
 using System.Net.Http;
+using System.Threading.Tasks;
+using DSharpPlus.CommandsNext;
+using DSharpPlus.CommandsNext.Attributes;
+using ImageMagick;
 using MuffaloBot.Attributes;
 
 namespace MuffaloBot.Commands
 {
-    [Cooldown(1, 60, CooldownBucketType.User), RequireChannelInGuild("RimWorld", "bot-commands")]
+    [Cooldown(1, 60, CooldownBucketType.User)]
+    [RequireChannelInGuild("RimWorld", "bot-commands")]
     public class ImageMagickCommands
     {
-        enum ImageEditMode
-        {
-            Swirl,
-            Rescale,
-            Wave,
-            Implode,
-            JPEG,
-            MoreJPEG,
-            MostJPEG
-        }
-        [Command("swirl"), Description("Applies a swirl effect to an image. The image can be provided as an attachment or a link.")]
-        public async Task ImageMagickDistort(CommandContext ctx, [Description("Optional. The link to the image you want to apply the effect to.")] string link = null)
+        [Command("swirl")]
+        [Description("Applies a swirl effect to an image. The image can be provided as an attachment or a link.")]
+        public async Task ImageMagickDistort(CommandContext ctx,
+            [Description("Optional. The link to the image you want to apply the effect to.")]
+            string link = null)
         {
             await DoImageMagickCommand(ctx, ImageEditMode.Swirl, link).ConfigureAwait(false);
         }
-        [Command("wonky"), Description("Shifts and rescales the image in weird ways. The image can be provided as an attachment or a link.")]
-        public async Task ImageMagickWonky(CommandContext ctx, [Description("Optional. The link to the image you want to apply the effect to.")] string link = null)
+
+        [Command("wonky")]
+        [Description(
+            "Shifts and rescales the image in weird ways. The image can be provided as an attachment or a link.")]
+        public async Task ImageMagickWonky(CommandContext ctx,
+            [Description("Optional. The link to the image you want to apply the effect to.")]
+            string link = null)
         {
             await DoImageMagickCommand(ctx, ImageEditMode.Rescale, link).ConfigureAwait(false);
         }
-        [Command("wave"), Description("Applies a wave effect to an image. The image can be provided as an attachment or a link.")]
-        public async Task ImageMagickWave(CommandContext ctx, [Description("Optional. The link to the image you want to apply the effect to.")] string link = null)
+
+        [Command("wave")]
+        [Description("Applies a wave effect to an image. The image can be provided as an attachment or a link.")]
+        public async Task ImageMagickWave(CommandContext ctx,
+            [Description("Optional. The link to the image you want to apply the effect to.")]
+            string link = null)
         {
             await DoImageMagickCommand(ctx, ImageEditMode.Wave, link).ConfigureAwait(false);
         }
-        [Command("implode"), Description("Applies an implosion effect to an image. The image can be provided as an attachment or a link.")]
-        public async Task ImageMagickImplode(CommandContext ctx, [Description("Optional. The link to the image you want to apply the effect to.")] string link = null)
+
+        [Command("implode")]
+        [Description("Applies an implosion effect to an image. The image can be provided as an attachment or a link.")]
+        public async Task ImageMagickImplode(CommandContext ctx,
+            [Description("Optional. The link to the image you want to apply the effect to.")]
+            string link = null)
         {
             await DoImageMagickCommand(ctx, ImageEditMode.Implode, link).ConfigureAwait(false);
         }
-        [Command("jpeg"), Description("Compresses an image. A lot. The image can be provided as an attachment or a link.")]
-        public async Task ImageMagickJPEG(CommandContext ctx, [Description("Optional. The link to the image you want to apply the effect to.")] string link = null)
+
+        [Command("jpeg")]
+        [Description("Compresses an image. A lot. The image can be provided as an attachment or a link.")]
+        public async Task ImageMagickJPEG(CommandContext ctx,
+            [Description("Optional. The link to the image you want to apply the effect to.")]
+            string link = null)
         {
             await DoImageMagickCommand(ctx, ImageEditMode.JPEG, link).ConfigureAwait(false);
         }
-        [Command("moarjpeg"), Description("Compresses an image. Even more than `!jpeg`. The image can be provided as an attachment or a link.")]
-        public async Task ImageMagickMoreJPEG(CommandContext ctx, [Description("Optional. The link to the image you want to apply the effect to.")] string link = null)
+
+        [Command("moarjpeg")]
+        [Description(
+            "Compresses an image. Even more than `!jpeg`. The image can be provided as an attachment or a link.")]
+        public async Task ImageMagickMoreJPEG(CommandContext ctx,
+            [Description("Optional. The link to the image you want to apply the effect to.")]
+            string link = null)
         {
             await DoImageMagickCommand(ctx, ImageEditMode.MoreJPEG, link).ConfigureAwait(false);
         }
-        [Command("mostjpeg"), Description("Compresses an image. So much that that will become smaller than a paperclip. The image can be provided as an attachment or a link.")]
-        public async Task ImageMagickMostJPEG(CommandContext ctx, [Description("Optional. The link to the image you want to apply the effect to.")] string link = null)
+
+        [Command("mostjpeg")]
+        [Description(
+            "Compresses an image. So much that that will become smaller than a paperclip. The image can be provided as an attachment or a link.")]
+        public async Task ImageMagickMostJPEG(CommandContext ctx,
+            [Description("Optional. The link to the image you want to apply the effect to.")]
+            string link = null)
         {
             await DoImageMagickCommand(ctx, ImageEditMode.MostJPEG, link).ConfigureAwait(false);
         }
-        async Task DoImageMagickCommand(CommandContext ctx, ImageEditMode mode, string link)
+
+        private async Task DoImageMagickCommand(CommandContext ctx, ImageEditMode mode, string link)
         {
             await ctx.TriggerTypingAsync().ConfigureAwait(false);
             string attachmentUrl = null;
-            if (!string.IsNullOrWhiteSpace(ctx.RawArgumentString) && link != null && Uri.TryCreate(link, UriKind.Absolute, out Uri uri))
+            if (!string.IsNullOrWhiteSpace(ctx.RawArgumentString) && link != null &&
+                Uri.TryCreate(link, UriKind.Absolute, out _))
             {
                 attachmentUrl = link;
             }
             else
             {
-                IReadOnlyList<DiscordMessage> messages = await ctx.Channel.GetMessagesAsync(10);
-                for (int i = 0; i < messages.Count; i++)
+                var messages = await ctx.Channel.GetMessagesAsync(10);
+                foreach (var discordMessage in messages)
                 {
-                    if (messages[i].Attachments.Count != 0)
+                    if (discordMessage.Attachments.Count == 0)
                     {
-                        attachmentUrl = messages[i].Attachments[0].Url;
-                        break;
+                        continue;
                     }
+
+                    attachmentUrl = discordMessage.Attachments[0].Url;
+                    break;
                 }
             }
+
             if (!string.IsNullOrEmpty(attachmentUrl))
             {
-                HttpClient client = new HttpClient();
+                var client = new HttpClient();
                 byte[] buffer;
                 try
                 {
@@ -95,6 +116,7 @@ namespace MuffaloBot.Commands
                     await ctx.RespondAsync("Error connecting to image link.");
                     return;
                 }
+
                 if (attachmentUrl.EndsWith(".gif"))
                 {
                     await DoImageMagickCommandForGif(ctx, buffer, mode);
@@ -109,13 +131,16 @@ namespace MuffaloBot.Commands
                 await ctx.RespondAsync("No image found.");
             }
         }
-        async Task DoImageMagickCommandForGif(CommandContext ctx, byte[] buffer, ImageEditMode mode)
+
+        private async Task DoImageMagickCommandForGif(CommandContext ctx, byte[] buffer, ImageEditMode mode)
         {
             if (mode == ImageEditMode.Rescale)
             {
-                await ctx.RespondAsync("This mode is not supported for gifs since it is slow and often dramatically increases gif size");
+                await ctx.RespondAsync(
+                    "This mode is not supported for gifs since it is slow and often dramatically increases gif size");
                 return;
             }
+
             MagickImageCollection image;
             try
             {
@@ -126,34 +151,39 @@ namespace MuffaloBot.Commands
                 await ctx.RespondAsync("Image format not recognised.");
                 return;
             }
+
             int originalWidth = image[0].Width, originalHeight = image[0].Height;
             if (originalHeight * originalWidth > 1000000)
             {
-                await ctx.RespondAsync($"Gif exceeds maximum size of 1000000 pixels (Actual size: {originalHeight * originalWidth})");
+                await ctx.RespondAsync(
+                    $"Gif exceeds maximum size of 1000000 pixels (Actual size: {originalHeight * originalWidth})");
                 return;
             }
+
             if (image.Count > 100)
             {
                 await ctx.RespondAsync($"Gif exceeds maximum frame count of 100 pixels (Actual count: {image.Count})");
                 return;
             }
+
             image.Coalesce();
             long rawLength;
-            using (MemoryStream stream = new MemoryStream())
+            await using (var stream = new MemoryStream())
             {
                 image.Write(stream);
                 rawLength = stream.Length;
             }
-            double exceed = rawLength / 4194304d;
+
+            var exceed = rawLength / 4194304d;
             double rescale = 1f;
             if (exceed > 1.0)
             {
                 rescale = Math.Sqrt(exceed);
             }
+
             await ctx.TriggerTypingAsync();
-            for (int i = 0; i < image.Count; i++)
+            foreach (var frame in image)
             {
-                IMagickImage frame = image[i];
                 if (rescale > 1f)
                 {
                     if (rescale > 2f)
@@ -165,18 +195,21 @@ namespace MuffaloBot.Commands
                         frame.Resize((int)(frame.Width / rescale), (int)(frame.Height / rescale));
                     }
                 }
+
                 DoMagic(mode, frame, originalWidth, originalHeight);
             }
+
             await ctx.TriggerTypingAsync();
             image.OptimizeTransparency();
-            using (Stream stream = new MemoryStream())
+            await using (Stream stream = new MemoryStream())
             {
                 image.Write(stream);
                 stream.Seek(0, SeekOrigin.Begin);
                 await ctx.RespondWithFileAsync(stream, "magic.gif");
             }
         }
-        async Task DoImageMagickCommandForStillImage(CommandContext ctx, byte[] buffer, ImageEditMode mode)
+
+        private async Task DoImageMagickCommandForStillImage(CommandContext ctx, byte[] buffer, ImageEditMode mode)
         {
             MagickImage image;
             try
@@ -188,19 +221,23 @@ namespace MuffaloBot.Commands
                 await ctx.RespondAsync("Image format not recognised.");
                 return;
             }
+
             int originalWidth = image.Width, originalHeight = image.Height;
             if (originalHeight * originalWidth > 2250000)
             {
-                await ctx.RespondAsync($"Image exceeds maximum size of 2250000 pixels (Actual size: {originalHeight * originalWidth})");
+                await ctx.RespondAsync(
+                    $"Image exceeds maximum size of 2250000 pixels (Actual size: {originalHeight * originalWidth})");
                 return;
             }
+
             // Do magic
-            double exceed = buffer.Length / 8388608d;
+            var exceed = buffer.Length / 8388608d;
             double rescale = 1f;
             if (exceed > 1.0)
             {
                 rescale = 1.0 / Math.Sqrt(exceed);
             }
+
             if (rescale < 1f)
             {
                 if (rescale < 0.5f)
@@ -212,30 +249,30 @@ namespace MuffaloBot.Commands
                     image.Resize((int)(image.Width * rescale), (int)(image.Height * rescale));
                 }
             }
+
             DoMagic(mode, image, originalWidth, originalHeight);
-            using (Stream stream = new MemoryStream())
+            await using Stream stream = new MemoryStream();
+            if (mode == ImageEditMode.JPEG || mode == ImageEditMode.MoreJPEG || mode == ImageEditMode.MostJPEG)
             {
-                if (mode == ImageEditMode.JPEG || mode == ImageEditMode.MoreJPEG || mode == ImageEditMode.MostJPEG)
-                {
-                    image.Write(stream, MagickFormat.Jpeg);
-                }
-                else
-                {
-                    image.Write(stream);
-                }
-                stream.Seek(0, SeekOrigin.Begin);
-                if (mode == ImageEditMode.JPEG || mode == ImageEditMode.MoreJPEG || mode == ImageEditMode.MostJPEG)
-                {
-                    await ctx.RespondWithFileAsync(stream, "magic.jpeg");
-                }
-                else
-                {
-                    await ctx.RespondWithFileAsync(stream, "magic.png");
-                }
+                image.Write(stream, MagickFormat.Jpeg);
+            }
+            else
+            {
+                image.Write(stream);
+            }
+
+            stream.Seek(0, SeekOrigin.Begin);
+            if (mode == ImageEditMode.JPEG || mode == ImageEditMode.MoreJPEG || mode == ImageEditMode.MostJPEG)
+            {
+                await ctx.RespondWithFileAsync(stream, "magic.jpeg");
+            }
+            else
+            {
+                await ctx.RespondWithFileAsync(stream, "magic.png");
             }
         }
 
-        void DoMagic(ImageEditMode mode, IMagickImage image, int originalWidth, int originalHeight)
+        private void DoMagic(ImageEditMode mode, IMagickImage image, int originalWidth, int originalHeight)
         {
             switch (mode)
             {
@@ -244,7 +281,7 @@ namespace MuffaloBot.Commands
                     break;
                 case ImageEditMode.Rescale:
                     image.LiquidRescale(image.Width / 2, image.Height / 2);
-                    image.LiquidRescale((image.Width * 3) / 2, (image.Height * 3) / 2);
+                    image.LiquidRescale(image.Width * 3 / 2, image.Height * 3 / 2);
                     image.Resize(originalWidth, originalHeight);
                     break;
                 case ImageEditMode.Wave:
@@ -263,9 +300,18 @@ namespace MuffaloBot.Commands
                 case ImageEditMode.MostJPEG:
                     image.Quality = 1;
                     break;
-                default:
-                    break;
             }
+        }
+
+        private enum ImageEditMode
+        {
+            Swirl,
+            Rescale,
+            Wave,
+            Implode,
+            JPEG,
+            MoreJPEG,
+            MostJPEG
         }
     }
 }

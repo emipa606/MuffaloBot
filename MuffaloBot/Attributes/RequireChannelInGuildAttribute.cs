@@ -1,13 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.Threading.Tasks;
 using DSharpPlus.CommandsNext;
 using DSharpPlus.CommandsNext.Attributes;
 
 namespace MuffaloBot.Attributes
 {
-    sealed class RequireChannelInGuildAttribute : CheckBaseAttribute
+    internal sealed class RequireChannelInGuildAttribute : CheckBaseAttribute
     {
         // This is a positional argument
         public RequireChannelInGuildAttribute(string guildName, string channelName)

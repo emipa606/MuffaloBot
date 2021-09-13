@@ -1,18 +1,15 @@
-﻿using DSharpPlus;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
+﻿using System.Net.Http;
 using System.Threading.Tasks;
-using Newtonsoft.Json;
+using DSharpPlus;
+using DSharpPlus.EventArgs;
 using Newtonsoft.Json.Linq;
-using System.Net.Http;
 
 namespace MuffaloBot.Modules
 {
     public class JsonDataModule : BaseModule
     {
         public JObject data;
+
         protected override void Setup(DiscordClient client)
         {
             Client = client;
@@ -20,9 +17,9 @@ namespace MuffaloBot.Modules
             client.MessageCreated += HandleQuoteAsync;
         }
 
-        private async Task HandleQuoteAsync(DSharpPlus.EventArgs.MessageCreateEventArgs e)
+        private async Task HandleQuoteAsync(MessageCreateEventArgs e)
         {
-            JToken quote = data["quotes"][e.Message.Content];
+            var quote = data["quotes"]?[e.Message.Content];
             if (quote != null)
             {
                 await e.Message.RespondAsync(quote.ToString());
@@ -31,9 +28,11 @@ namespace MuffaloBot.Modules
 
         public async Task ReloadDataAsync()
         {
-            HttpClient http = new HttpClient();
-            string result = await http.GetStringAsync("https://raw.githubusercontent.com/Zero747/MuffaloBot/master/MuffaloBot/Data/data.json").ConfigureAwait(false);
-            JObject jObject = JObject.Parse(result);
+            var http = new HttpClient();
+            var result = await http
+                .GetStringAsync("https://raw.githubusercontent.com/Zero747/MuffaloBot/master/MuffaloBot/Data/data.json")
+                .ConfigureAwait(false);
+            var jObject = JObject.Parse(result);
             data = jObject;
         }
     }

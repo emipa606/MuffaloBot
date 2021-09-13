@@ -1,23 +1,28 @@
-﻿using DSharpPlus;
+﻿using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using DSharpPlus;
 using DSharpPlus.CommandsNext;
 using DSharpPlus.CommandsNext.Converters;
 using DSharpPlus.CommandsNext.Entities;
 using DSharpPlus.Entities;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace MuffaloBot.Converters
 {
     /// <summary>
-    /// Help formatter based off of the default help formatter
+    ///     Help formatter based off of the default help formatter
     /// </summary>
     public class MuffaloBotHelpFormatter : IHelpFormatter
     {
+        private readonly DiscordEmbedBuilder _embed;
+        private string _desc;
+
+        private bool _gexec;
+
+        private string _name;
+
         /// <summary>
-        /// Creates a new default help formatter.
+        ///     Creates a new default help formatter.
         /// </summary>
         public MuffaloBotHelpFormatter()
         {
@@ -28,7 +33,7 @@ namespace MuffaloBot.Converters
         }
 
         /// <summary>
-        /// Sets the name of the current command.
+        ///     Sets the name of the current command.
         /// </summary>
         /// <param name="name">Name of the command for which the help is displayed.</param>
         /// <returns>Current formatter.</returns>
@@ -39,7 +44,7 @@ namespace MuffaloBot.Converters
         }
 
         /// <summary>
-        /// Sets the description of the current command.
+        ///     Sets the description of the current command.
         /// </summary>
         /// <param name="description">Description of the command for which help is displayed.</param>
         /// <returns>Current formatter.</returns>
@@ -50,7 +55,7 @@ namespace MuffaloBot.Converters
         }
 
         /// <summary>
-        /// Sets aliases for the current command.
+        ///     Sets aliases for the current command.
         /// </summary>
         /// <param name="aliases">Aliases of the command for which help is displayed.</param>
         /// <returns>Current formatter.</returns>
@@ -58,59 +63,70 @@ namespace MuffaloBot.Converters
         {
             if (aliases.Any())
             {
-                _embed.AddField("Aliases", string.Join(", ", aliases.Select(new Func<string, string>(Formatter.InlineCode))), false);
+                _embed.AddField("Aliases", string.Join(", ", aliases.Select(Formatter.InlineCode)));
             }
+
             return this;
         }
 
         /// <summary>
-        /// Sets the arguments the current command takes.
+        ///     Sets the arguments the current command takes.
         /// </summary>
         /// <param name="arguments">Arguments that the command for which help is displayed takes.</param>
         /// <returns>Current formatter.</returns>
         public IHelpFormatter WithArguments(IEnumerable<CommandArgument> arguments)
         {
-            if (arguments.Any<CommandArgument>())
+            if (!arguments.Any())
             {
-                StringBuilder stringBuilder = new StringBuilder();
-                foreach (CommandArgument commandArgument in arguments)
-                {
-                    if (commandArgument.IsOptional || commandArgument.IsCatchAll)
-                    {
-                        stringBuilder.Append("`[");
-                    }
-                    else
-                    {
-                        stringBuilder.Append("`<");
-                    }
-                    stringBuilder.Append(commandArgument.Name);
-                    if (commandArgument.IsCatchAll)
-                    {
-                        stringBuilder.Append("...");
-                    }
-                    if (commandArgument.IsOptional || commandArgument.IsCatchAll)
-                    {
-                        stringBuilder.Append("]: ");
-                    }
-                    else
-                    {
-                        stringBuilder.Append(">: ");
-                    }
-                    stringBuilder.Append(commandArgument.Type.ToUserFriendlyName()).Append("`: ");
-                    stringBuilder.Append(string.IsNullOrWhiteSpace(commandArgument.Description) ? "No description provided." : commandArgument.Description);
-                    if (commandArgument.IsOptional)
-                    {
-                        stringBuilder.Append(" Default value: ").Append(commandArgument.DefaultValue);
-                    }
-                    stringBuilder.AppendLine();
-                }
-                _embed.AddField("Arguments", stringBuilder.ToString(), false);
+                return this;
             }
+
+            var stringBuilder = new StringBuilder();
+            foreach (var commandArgument in arguments)
+            {
+                if (commandArgument.IsOptional || commandArgument.IsCatchAll)
+                {
+                    stringBuilder.Append("`[");
+                }
+                else
+                {
+                    stringBuilder.Append("`<");
+                }
+
+                stringBuilder.Append(commandArgument.Name);
+                if (commandArgument.IsCatchAll)
+                {
+                    stringBuilder.Append("...");
+                }
+
+                if (commandArgument.IsOptional || commandArgument.IsCatchAll)
+                {
+                    stringBuilder.Append("]: ");
+                }
+                else
+                {
+                    stringBuilder.Append(">: ");
+                }
+
+                stringBuilder.Append(commandArgument.Type.ToUserFriendlyName()).Append("`: ");
+                stringBuilder.Append(string.IsNullOrWhiteSpace(commandArgument.Description)
+                    ? "No description provided."
+                    : commandArgument.Description);
+                if (commandArgument.IsOptional)
+                {
+                    stringBuilder.Append(" Default value: ").Append(commandArgument.DefaultValue);
+                }
+
+                stringBuilder.AppendLine();
+            }
+
+            _embed.AddField("Arguments", stringBuilder.ToString());
+
             return this;
         }
 
         /// <summary>
-        /// When the current command is a group, this sets it as executable.
+        ///     When the current command is a group, this sets it as executable.
         /// </summary>
         /// <returns>Current formatter.</returns>
         public IHelpFormatter WithGroupExecutable()
@@ -120,7 +136,7 @@ namespace MuffaloBot.Converters
         }
 
         /// <summary>
-        /// Sets subcommands of the current command. This is also invoked for top-level command listing.
+        ///     Sets subcommands of the current command. This is also invoked for top-level command listing.
         /// </summary>
         /// <param name="subcommands">Subcommands of the command for which help is displayed.</param>
         /// <returns>Current formatter.</returns>
@@ -128,41 +144,38 @@ namespace MuffaloBot.Converters
         {
             if (subcommands.Any())
             {
-                _embed.AddField((_name != null) ? "Subcommands" : "Commands", string.Join(", ", from xc in subcommands
-                                                                                                          select Formatter.InlineCode(xc.QualifiedName)), false);
+                _embed.AddField(_name != null ? "Subcommands" : "Commands", string.Join(", ", from xc in subcommands
+                    select Formatter.InlineCode(xc.QualifiedName)));
             }
+
             return this;
         }
 
         /// <summary>
-        /// Construct the help message.
+        ///     Construct the help message.
         /// </summary>
         /// <returns>Data for the help message.</returns>
         public CommandHelpMessage Build()
         {
             _embed.Title = "MuffaloBot Help";
             _embed.Color = DiscordColor.Green;
-            string description = "Listing all public commands. Type `!mbhelp <command>` to learn more about a command. Type `!quotes` for all quote commands.";
+            var description =
+                "Listing all public commands. Type `!mbhelp <command>` to learn more about a command. Type `!quotes` for all quote commands.";
             if (_name != null)
             {
-                StringBuilder stringBuilder = new StringBuilder();
-                stringBuilder.Append(Formatter.InlineCode(_name)).Append(": ").Append(string.IsNullOrWhiteSpace(_desc) ? "No description provided." : _desc);
+                var stringBuilder = new StringBuilder();
+                stringBuilder.Append(Formatter.InlineCode(_name)).Append(": ")
+                    .Append(string.IsNullOrWhiteSpace(_desc) ? "No description provided." : _desc);
                 if (_gexec)
                 {
                     stringBuilder.AppendLine().AppendLine().Append("This can be executed as a standalone command.");
                 }
+
                 description = stringBuilder.ToString();
             }
+
             _embed.Description = description;
             return new CommandHelpMessage(null, _embed);
         }
-
-        private DiscordEmbedBuilder _embed;
-
-        private string _name;
-
-        private string _desc;
-
-        private bool _gexec;
     }
 }

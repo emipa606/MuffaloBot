@@ -1,10 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
 using System.Reflection;
-using System.Text;
-using System.Threading;
 using System.Threading.Tasks;
 using DSharpPlus;
 using DSharpPlus.CommandsNext;
@@ -12,22 +7,15 @@ using MuffaloBot.Converters;
 
 namespace MuffaloBot
 {
-    class Program
+    internal class Program
     {
+        private static Program _i;
         public DiscordClient client;
         public CommandsNextModule commandsNext;
-        static Program _i;
-        public static Program instance
-        {
-            get
-            {
-                if (_i == null) _i = new Program();
-                return _i;
-            }
-        }
+
         public Program()
         {
-            client = new DiscordClient(new DiscordConfiguration()
+            client = new DiscordClient(new DiscordConfiguration
             {
                 UseInternalLogHandler = true,
 #if DEBUG
@@ -38,42 +26,63 @@ namespace MuffaloBot
                 TokenType = TokenType.Bot,
                 Token = AuthResources.BotToken // Create a new AuthResources resource file
             });
-            commandsNext = client.UseCommandsNext(new CommandsNextConfiguration()
+            commandsNext = client.UseCommandsNext(new CommandsNextConfiguration
             {
                 StringPrefix = "!",
                 EnableDefaultHelp = false
             });
             commandsNext.RegisterCommands(Assembly.GetExecutingAssembly());
-            client.DebugLogger.LogMessage(LogLevel.Info, "MuffaloBot", $"Registered {commandsNext.RegisteredCommands.Count} commands", DateTime.Now);
+            client.DebugLogger.LogMessage(LogLevel.Info, "MuffaloBot",
+                $"Registered {commandsNext.RegisteredCommands.Count} commands", DateTime.Now);
             commandsNext.SetHelpFormatter<MuffaloBotHelpFormatter>();
             LoadModules();
         }
+
+        public static Program instance
+        {
+            get
+            {
+                if (_i == null)
+                {
+                    _i = new Program();
+                }
+
+                return _i;
+            }
+        }
+
         public void LoadModules()
         {
-            foreach (Type t in Assembly.GetExecutingAssembly().GetTypes())
+            foreach (var t in Assembly.GetExecutingAssembly().GetTypes())
             {
-                if (typeof(BaseModule).IsAssignableFrom(t))
+                if (!typeof(BaseModule).IsAssignableFrom(t))
                 {
-                    try
-                    {
-                        client.AddModule((BaseModule)Activator.CreateInstance(t));
-                        client.DebugLogger.LogMessage(LogLevel.Info, "MuffaloBot", $"Loaded module {t.FullName}", DateTime.Now);
-                    }
-                    catch (Exception e)
-                    {
-                        client.DebugLogger.LogMessage(LogLevel.Error, "MuffaloBot", $"Could not load module {t.FullName}: {e}", DateTime.Now);
-                    }
+                    continue;
+                }
+
+                try
+                {
+                    client.AddModule((BaseModule)Activator.CreateInstance(t));
+                    client.DebugLogger.LogMessage(LogLevel.Info, "MuffaloBot", $"Loaded module {t.FullName}",
+                        DateTime.Now);
+                }
+                catch (Exception e)
+                {
+                    client.DebugLogger.LogMessage(LogLevel.Error, "MuffaloBot",
+                        $"Could not load module {t.FullName}: {e}", DateTime.Now);
                 }
             }
         }
+
         public async Task StartAsync()
         {
             await client.ConnectAsync();
             await Task.Delay(-1);
         }
-        static void Main(string[] args)
+
+        private static void Main(string[] args)
         {
-            Program.instance.StartAsync().ConfigureAwait(false).GetAwaiter().GetResult();
+            instance.StartAsync().ConfigureAwait(false).GetAwaiter().GetResult();
         }
     }
 }

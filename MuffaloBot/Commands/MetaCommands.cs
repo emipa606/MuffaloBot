@@ -1,18 +1,11 @@
-﻿using DSharpPlus.CommandsNext.Attributes;
-using DSharpPlus;
-using System;
-using System.Collections.Generic;
+﻿using System;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using DSharpPlus.CommandsNext;
-using DSharpPlus.Entities;
-using MuffaloBot;
-using System.Diagnostics;
 using System.Reflection;
-using System.Threading;
-using System.Net.Http;
-using System.IO;
+using System.Threading.Tasks;
+using DSharpPlus;
+using DSharpPlus.CommandsNext;
+using DSharpPlus.CommandsNext.Attributes;
+using DSharpPlus.Entities;
 using Microsoft.CodeAnalysis.CSharp.Scripting;
 using Microsoft.CodeAnalysis.Scripting;
 using MuffaloBot.Modules;
@@ -23,6 +16,7 @@ namespace MuffaloBot.Commands
     {
         public CommandContext ctx;
     }
+
     public class Meta
     {
         [Command("mbhelp")]
@@ -30,10 +24,12 @@ namespace MuffaloBot.Commands
         {
             return ctx.CommandsNext.DefaultHelpAsync(ctx, command);
         }
-        [Command("about"), Description("Shows info about the bot.")]
+
+        [Command("about")]
+        [Description("Shows info about the bot.")]
         public Task About(CommandContext ctx)
         {
-            DiscordEmbedBuilder embedBuilder = new DiscordEmbedBuilder();
+            var embedBuilder = new DiscordEmbedBuilder();
             embedBuilder.WithTitle("About MuffaloBot");
             embedBuilder.WithUrl("https://github.com/Zero747/MuffaloBot");
             embedBuilder.WithDescription(@"Contributors: spdskatr
@@ -46,14 +42,18 @@ This bot account will not have an invite link. It is exclusive to the RimWorld d
             embedBuilder.WithColor(DiscordColor.Azure);
             return ctx.RespondAsync(embed: embedBuilder.Build());
         }
-        [Command("update"), RequirePermissions(Permissions.ViewAuditLog), Hidden]
+
+        [Command("update")]
+        [RequirePermissions(Permissions.ViewAuditLog)]
+        [Hidden]
         public async Task UpdateAsync(CommandContext ctx)
         {
             await RunUpdateAsync(ctx).ConfigureAwait(false);
         }
+
         private async Task RunUpdateAsync(CommandContext ctx)
         {
-            DiscordMessage message = await ctx.RespondAsync("```\nUpdating... [          ] 0%\n```");
+            var message = await ctx.RespondAsync("```\nUpdating... [          ] 0%\n```");
             await ctx.Client.GetModule<JsonDataModule>().ReloadDataAsync();
             await message.ModifyAsync("```\nUpdating... [████░     ] 42%\n```");
             await ctx.Client.GetModule<XmlDatabaseModule>().UpdateDatabaseAsync();
@@ -66,56 +66,81 @@ This bot account will not have an invite link. It is exclusive to the RimWorld d
                 await message.ModifyAsync("```\nUpdating... [██████████] jk <3\n```");
                 await Task.Delay(1000);
             }
+
             await message.ModifyAsync("```\nUpdating... [██████████] Done!\n```");
         }
-        [Command("version"), Hidden]
+
+        [Command("version")]
+        [Hidden]
         public Task GetVersionAsync(CommandContext ctx)
         {
-            AssemblyName name = Assembly.GetExecutingAssembly().GetName();
+            var name = Assembly.GetExecutingAssembly().GetName();
             return ctx.RespondAsync($"{name.Name} Version {name.Version}");
         }
-        [Command("status"), RequireOwner, Hidden]
+
+        [Command("status")]
+        [RequireOwner]
+        [Hidden]
         public async Task SetStatusAsync(CommandContext ctx, string status)
         {
             await ctx.Client.UpdateStatusAsync(new DiscordGame(status));
             await ctx.RespondAsync(DiscordEmoji.FromName(ctx.Client, ":ok_hand:").ToString());
         }
-        [Command("die"), RequireOwner, Hidden]
+
+        [Command("die")]
+        [RequireOwner]
+        [Hidden]
         public async Task DieAsync(CommandContext ctx)
         {
             await ctx.RespondAsync("Restarting...");
             await ctx.Client.DisconnectAsync();
             Environment.Exit(0);
         }
-        [Command("crash"), RequireOwner, Hidden]
+
+        [Command("crash")]
+        [RequireOwner]
+        [Hidden]
         public Task CrashAsync(CommandContext ctx)
         {
             throw new Exception("oops.");
         }
-        [Command("roleid"), Hidden]
+
+        [Command("roleid")]
+        [Hidden]
         public Task GetRoleAsync(CommandContext ctx, DiscordRole role)
         {
             return ctx.RespondAsync(role.Id.ToString());
         }
-        [Command("isimmortal"), RequireOwner, Hidden]
+
+        [Command("isimmortal")]
+        [RequireOwner]
+        [Hidden]
         public Task IsImmortalAsync(CommandContext ctx)
         {
             return ctx.RespondAsync(Environment.GetCommandLineArgs().Any(s => s == "-immortal").ToString());
         }
-        [Command("eval"), RequireOwner, Hidden]
+
+        [Command("eval")]
+        [RequireOwner]
+        [Hidden]
         public async Task EvalAsync(CommandContext ctx, [RemainingText] string code)
         {
             await ctx.TriggerTypingAsync().ConfigureAwait(false);
-            string actualCode = code.TrimStart('`', 'c', 's', 'h', 'a', 'r', 'p').TrimEnd('`');
-            ScriptOptions options = ScriptOptions.Default.WithImports("System", "System.Collections.Generic", "System.Diagnostics", "System.Linq", "System.Net.Http", "System.Reflection", "System.Text", "System.Text.RegularExpressions", "System.Threading.Tasks", "DSharpPlus", "DSharpPlus.CommandsNext", "DSharpPlus.Entities", "DSharpPlus.EventArgs", "DSharpPlus.Exceptions", "MuffaloBot", "MuffaloBot.Commands")
-                .WithReferences(AppDomain.CurrentDomain.GetAssemblies().Where(xa => !xa.IsDynamic && !string.IsNullOrWhiteSpace(xa.Location)));
+            var actualCode = code.TrimStart('`', 'c', 's', 'h', 'a', 'r', 'p').TrimEnd('`');
+            var options = ScriptOptions.Default.WithImports("System", "System.Collections.Generic",
+                    "System.Diagnostics", "System.Linq", "System.Net.Http", "System.Reflection", "System.Text",
+                    "System.Text.RegularExpressions", "System.Threading.Tasks", "DSharpPlus", "DSharpPlus.CommandsNext",
+                    "DSharpPlus.Entities", "DSharpPlus.EventArgs", "DSharpPlus.Exceptions", "MuffaloBot",
+                    "MuffaloBot.Commands")
+                .WithReferences(AppDomain.CurrentDomain.GetAssemblies()
+                    .Where(xa => !xa.IsDynamic && !string.IsNullOrWhiteSpace(xa.Location)));
             Script script = CSharpScript.Create(actualCode, options, typeof(EvalGobals));
 
-            Exception ex = null;
+            Exception ex;
             ScriptState state = null;
             try
             {
-                state = await script.RunAsync(new EvalGobals() { ctx = ctx }).ConfigureAwait(false);
+                state = await script.RunAsync(new EvalGobals { ctx = ctx }).ConfigureAwait(false);
                 ex = state.Exception;
             }
             catch (Exception e)
@@ -129,16 +154,19 @@ This bot account will not have an invite link. It is exclusive to the RimWorld d
             }
             else
             {
-                await ctx.RespondAsync($"Result: ```{state?.ReturnValue ?? "(null)"}```");
+                await ctx.RespondAsync($"Result: ```{state.ReturnValue ?? "(null)"}```");
             }
         }
-        [Command("dontask"), Hidden]
+
+        [Command("dontask")]
+        [Hidden]
         public Task DontAsk(CommandContext ctx)
         {
-            DiscordEmbedBuilder embedBuilder = new DiscordEmbedBuilder();
+            var embedBuilder = new DiscordEmbedBuilder();
             embedBuilder.WithTitle("**Don't ask to ask, just ask**");
             embedBuilder.WithUrl("http://sol.gfxile.net/dontask.html");
-            embedBuilder.WithDescription(@"If someone is around who can help, it's better if they can see the full question.
+            embedBuilder.WithDescription(
+                @"If someone is around who can help, it's better if they can see the full question.
 So, instead of
 ```Is someone around who can help me```
 ask
@@ -148,6 +176,5 @@ This gets you a response faster and prevents wasting time
             embedBuilder.WithColor(DiscordColor.Azure);
             return ctx.RespondAsync(embed: embedBuilder.Build());
         }
-
     }
 }

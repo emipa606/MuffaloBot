@@ -1,14 +1,4 @@
-﻿using DSharpPlus;
-using DSharpPlus.Entities;
-using DSharpPlus.EventArgs;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Reflection;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace MuffaloBot.Modules
+﻿namespace MuffaloBot.Modules
 {
 #if DEBUG
     class AuditLogManagerModule : BaseModule
@@ -175,7 +165,8 @@ namespace MuffaloBot.Modules
                 }
                 else if (ov.Type == "member")
                 {
-                    result += $"Member {ToStringHumanReadable(await guild.GetMemberAsync(ov.Id).ConfigureAwait(false), guild)}";
+                    result +=
+ $"Member {ToStringHumanReadable(await guild.GetMemberAsync(ov.Id).ConfigureAwait(false), guild)}";
                 }
                 return $"Allow: {ov.Allow.ToPermissionString()}\nDeny: {ov.Deny.ToPermissionString()}";
             }
