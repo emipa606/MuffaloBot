@@ -1,20 +1,21 @@
-﻿using DSharpPlus;
-using DSharpPlus.Entities;
-using DSharpPlus.EventArgs;
-using System;
-using System.Collections.Generic;
+﻿using System;
 using System.Linq;
 using System.Reflection;
-using System.Text;
 using System.Threading.Tasks;
+using DSharpPlus;
+using DSharpPlus.Entities;
+using DSharpPlus.EventArgs;
 
 namespace MuffaloBot.Modules
 {
     public class LogManagerModule : BaseModule
     {
-        static readonly MethodInfo memberwiseCloneMethod = typeof(DiscordMessage).GetMethod("MemberwiseClone", BindingFlags.NonPublic | BindingFlags.Instance);
-        DiscordMessage[] discordMessageCache = new DiscordMessage[1000];
-        int currentIndex = 0;
+        private static readonly MethodInfo memberwiseCloneMethod =
+            typeof(DiscordMessage).GetMethod("MemberwiseClone", BindingFlags.NonPublic | BindingFlags.Instance);
+
+        private readonly DiscordMessage[] discordMessageCache = new DiscordMessage[1000];
+
+        private int currentIndex;
 
         protected override void Setup(DiscordClient client)
         {
@@ -24,36 +25,52 @@ namespace MuffaloBot.Modules
             client.MessageUpdated += OnReceiveDiscordModifyLog;
         }
 
-        int FindIndexOfIdInCache(ulong id)
+        private int FindIndexOfIdInCache(ulong id)
         {
-            for (int i = currentIndex; i < discordMessageCache.Length; i++)
+            for (var i = currentIndex; i < discordMessageCache.Length; i++)
+            {
                 if (discordMessageCache[i] != null && discordMessageCache[i].Id == id)
+                {
                     return i;
+                }
+            }
 
-            for (int i = 0; i < currentIndex; i++)
+            for (var i = 0; i < currentIndex; i++)
+            {
                 if (discordMessageCache[i] != null && discordMessageCache[i].Id == id)
+                {
                     return i;
+                }
+            }
 
             return -1;
         }
-        DiscordMessage ShallowCopyOf(DiscordMessage message)
+
+        private DiscordMessage ShallowCopyOf(DiscordMessage message)
         {
-            return (DiscordMessage)memberwiseCloneMethod.Invoke(message, new object[0]);
+            return (DiscordMessage)memberwiseCloneMethod.Invoke(message, Array.Empty<object>());
         }
-        Task OnReceiveDiscordCreateLog(MessageCreateEventArgs e)
+
+        private Task OnReceiveDiscordCreateLog(MessageCreateEventArgs e)
         {
             return PushMessage(e.Message);
         }
 
-        async Task PushMessage(DiscordMessage message)
+        private async Task PushMessage(DiscordMessage message)
         {
-            await Task.Run(() => discordMessageCache[currentIndex = (++currentIndex % discordMessageCache.Length)] = ShallowCopyOf(message)).ConfigureAwait(false);
+            await Task.Run(() =>
+                discordMessageCache[currentIndex = ++currentIndex % discordMessageCache.Length] =
+                    ShallowCopyOf(message)).ConfigureAwait(false);
         }
 
-        async Task OnReceiveDiscordDeleteLog(MessageDeleteEventArgs e)
+        private async Task OnReceiveDiscordDeleteLog(MessageDeleteEventArgs e)
         {
-            if (e.Message.Channel?.Name == "logs" || (e.Message.Author?.IsBot ?? true)) return;
-            int ind = -1;
+            if (e.Message.Channel?.Name == "logs" || (e.Message.Author?.IsBot ?? true))
+            {
+                return;
+            }
+
+            int ind;
             if ((ind = FindIndexOfIdInCache(e.Message.Id)) != -1)
             {
                 await NotifyDeleteAsync(discordMessageCache[ind], e.Guild);
@@ -64,15 +81,22 @@ namespace MuffaloBot.Modules
                 await NotifyDeleteAsync(e.Message, e.Guild);
             }
         }
-        async Task OnReceiveDiscordModifyLog(MessageUpdateEventArgs e)
+
+        private async Task OnReceiveDiscordModifyLog(MessageUpdateEventArgs e)
         {
-            if (e.Message.Channel.Name == "logs" || e.Message == null || string.IsNullOrEmpty(e.Message.Content) || e.Message.Author.IsBot) return;
-            int ind = -1;
+            if (e.Message.Channel.Name == "logs" || e.Message == null || string.IsNullOrEmpty(e.Message.Content) ||
+                e.Message.Author.IsBot)
+            {
+                return;
+            }
+
+            int ind;
             if ((ind = FindIndexOfIdInCache(e.Message.Id)) != -1)
             {
-                DiscordMessage before = discordMessageCache[ind];
+                var before = discordMessageCache[ind];
                 await NotifyModifyAsync(before, e.Message, e.Guild);
-                discordMessageCache[ind] = (DiscordMessage)memberwiseCloneMethod.Invoke(e.Message, new object[0]);
+                discordMessageCache[ind] =
+                    (DiscordMessage)memberwiseCloneMethod.Invoke(e.Message, Array.Empty<object>());
             }
             else
             {
@@ -80,89 +104,122 @@ namespace MuffaloBot.Modules
                 await PushMessage(e.Message);
             }
         }
-        async Task NotifyDeleteAsync(DiscordMessage message, DiscordGuild guild)
+
+        private async Task NotifyDeleteAsync(DiscordMessage message, DiscordGuild guild)
         {
-            if (guild == null) return;
-            string content;
-            content = message.Content ?? "(Message too old...)";
+            if (guild == null)
+            {
+                return;
+            }
+
+            var content = message.Content ?? "(Message too old...)";
             if (content.Length == 0)
             {
                 content = "(Empty)";
             }
-            DiscordChannel channel = (await guild.GetChannelsAsync()).First(c => c.Name == "logs");
-            if (channel != null)
+
+            var channel = (await guild.GetChannelsAsync()).First(c => c.Name == "logs");
+            var permissions = channel.PermissionsFor(guild.CurrentMember);
+            if ((permissions & Permissions.SendMessages) != 0)
             {
-                Permissions permissions = channel.PermissionsFor(guild.CurrentMember);
-                if ((permissions & Permissions.SendMessages) != 0)
-                {
-                    DiscordEmbedBuilder embedBuilder = MakeDeleteMessageEmbed(message, content);
-                    await channel.SendMessageAsync(embed: embedBuilder.Build()).ConfigureAwait(false);
-                }
+                var embedBuilder = MakeDeleteMessageEmbed(message, content);
+                await channel.SendMessageAsync(embed: embedBuilder.Build()).ConfigureAwait(false);
             }
         }
-        async Task NotifyModifyAsync(DiscordMessage before, DiscordMessage after, DiscordGuild guild)
+
+        private async Task NotifyModifyAsync(DiscordMessage before, DiscordMessage after, DiscordGuild guild)
         {
-            string content;
-            content = before?.Content ?? "(Message too old...)";
+            var content = before?.Content ?? "(Message too old...)";
             if (content.Length == 0)
             {
                 content = "(Empty)";
             }
-            if (content == after.Content) return;
-            DiscordChannel channel = (await guild.GetChannelsAsync()).First(c => c.Name == "logs");
-            if (channel != null)
+
+            if (content == after.Content)
             {
-                Permissions permissions = channel.PermissionsFor(guild.CurrentMember);
-                if ((permissions & Permissions.SendMessages) != 0)
+                return;
+            }
+
+            var channel = (await guild.GetChannelsAsync()).First(c => c.Name == "logs");
+            var permissions = channel.PermissionsFor(guild.CurrentMember);
+            if ((permissions & Permissions.SendMessages) != 0)
+            {
+                var embedBuilderList = MakeModifyMessageEmbed(after, content);
+                foreach (var discordEmbedBuilder in embedBuilderList.Reverse())
                 {
-                    DiscordEmbedBuilder embedBuilder = MakeModifyMessageEmbed(after, content);
-                    await channel.SendMessageAsync(embed: embedBuilder.Build()).ConfigureAwait(false);
+                    await channel.SendMessageAsync(embed: discordEmbedBuilder.Build()).ConfigureAwait(false);
                 }
             }
         }
 
-        static DiscordEmbedBuilder MakeDeleteMessageEmbed(DiscordMessage message, string content)
+        private static DiscordEmbedBuilder MakeDeleteMessageEmbed(DiscordMessage message, string content)
         {
             content = content.Replace("`", "'");
-            DiscordEmbedBuilder embedBuilder = new DiscordEmbedBuilder();
+            var embedBuilder = new DiscordEmbedBuilder();
             embedBuilder.WithTitle("Message Deleted");
-            embedBuilder.WithAuthor($"{message.Author.Username} #{message.Author.Discriminator}", null, message.Author.AvatarUrl);
+            embedBuilder.WithAuthor($"{message.Author.Username} #{message.Author.Discriminator}", null,
+                message.Author.AvatarUrl);
             embedBuilder.WithColor(DiscordColor.Red);
             embedBuilder.WithDescription($"```\n{content}```");
             embedBuilder.AddField("ID", message.Id.ToString(), true);
             embedBuilder.AddField("Author ID", message.Author.Id.ToString(), true);
             embedBuilder.AddField("Channel", "#" + message.Channel.Name, true);
             embedBuilder.AddField("Timestamp (UTC)", message.Timestamp.ToUniversalTime().ToString(), true);
-            IReadOnlyList<DiscordAttachment> attachments = message.Attachments;
-            for (int i = 0; i < attachments.Count; i++)
+            var attachments = message.Attachments;
+            for (var i = 0; i < attachments.Count; i++)
             {
-                embedBuilder.AddField($"Attachment {i + 1}", $"{attachments[i].FileName} ({attachments[i].FileSize}) {attachments[i].Url}", true);
+                embedBuilder.AddField($"Attachment {i + 1}",
+                    $"{attachments[i].FileName} ({attachments[i].FileSize}) {attachments[i].Url}", true);
             }
+
             return embedBuilder;
         }
-        static DiscordEmbedBuilder MakeModifyMessageEmbed(DiscordMessage after, string content)
+
+        private static DiscordEmbedBuilder[] MakeModifyMessageEmbed(DiscordMessage after, string content)
         {
             content = content.Replace("`", "'");
-            string afterContent = after.Content?.Replace("`", "'");
+            var afterContent = after.Content?.Replace("`", "'");
             if (string.IsNullOrEmpty(afterContent))
             {
                 afterContent = "(Empty)";
             }
-            DiscordEmbedBuilder embedBuilder = new DiscordEmbedBuilder();
-            embedBuilder.WithTitle("Message Modified");
-            embedBuilder.WithAuthor($"{after.Author.Username} #{after.Author.Discriminator}", null, after.Author.AvatarUrl);
+
+            var title = "Message Modified";
+            var description = $"Before```\n{content}```After```\n{afterContent}```";
+
+            var embedBuilderList = new DiscordEmbedBuilder[1];
+            var embedBuilder = new DiscordEmbedBuilder();
+            embedBuilder.WithAuthor($"{after.Author.Username} #{after.Author.Discriminator}", null,
+                after.Author.AvatarUrl);
             embedBuilder.WithColor(DiscordColor.Yellow);
-            embedBuilder.WithDescription($"Before```\n{content}```After```\n{afterContent}```");
+            if (description.Length >= 2048)
+            {
+                embedBuilder.WithTitle("Message Modified (1/2)");
+                embedBuilderList = new DiscordEmbedBuilder[2];
+                embedBuilder.WithDescription($"Before```\n{content}```");
+                embedBuilderList[1] = embedBuilder;
+                embedBuilder = new DiscordEmbedBuilder();
+                title = "Message Modified (2/2)";
+                description = $"After```\n{afterContent}```";
+                embedBuilder.WithColor(DiscordColor.Yellow);
+            }
+
+            embedBuilder.WithTitle(title);
+            embedBuilder.WithDescription(description);
             embedBuilder.AddField("ID", after.Id.ToString(), true);
             embedBuilder.AddField("Author ID", after.Author.Id.ToString(), true);
             embedBuilder.AddField("Channel", "#" + after.Channel.Name, true);
             embedBuilder.AddField("Timestamp (UTC)", after.Timestamp.ToUniversalTime().ToString(), true);
-            IReadOnlyList<DiscordAttachment> attachments = after.Attachments;
-            for (int i = 0; i < attachments.Count; i++)
+            var attachments = after.Attachments;
+            for (var i = 0; i < attachments.Count; i++)
             {
-                embedBuilder.AddField($"Attachment {i + 1}", $"{attachments[i].FileName} ({attachments[i].FileSize}) {attachments[i].Url}", true);
+                embedBuilder.AddField($"Attachment {i + 1}",
+                    $"{attachments[i].FileName} ({attachments[i].FileSize}) {attachments[i].Url}", true);
             }
-            return embedBuilder;
+
+            embedBuilderList[0] = embedBuilder;
+
+            return embedBuilderList;
         }
     }
 }
